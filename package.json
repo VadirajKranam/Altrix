@@ -1,0 +1,19 @@
+{
+  "name": "altrix",
+  "version": "0.1.0",
+  "description": "TypeScript-first database migration engine",
+  "type": "module",
+  "bin": {
+    "altrix": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
