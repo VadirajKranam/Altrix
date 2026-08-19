@@ -10,6 +10,27 @@ export {
 
 export { registry } from "./metadata/registry.js";
 
+export {
+    saveSchemaSnapshot,
+    loadSchemaSnapshot,
+} from "./schema/snapshot.js";
+
+export {
+    diffSchemas,
+} from "./diff/diff.js";
+
+    export type {
+        SchemaChange,
+        AddTableChange,
+        DropTableChange,
+        AddColumnChange,
+        DropColumnChange,
+        AlterColumnChange,
+        AddIndexChange,
+        DropIndexChange,
+        AlterIndexChange,
+    } from "./diff/diff.js";
+
 export type {
     Schema,
     TableSchema,

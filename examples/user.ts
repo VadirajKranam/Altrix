@@ -12,7 +12,8 @@ import {
     unique: true,
 })
 @Index({
-    columns: ["firstName", "lastName"],
+    name:"idx_first_name_last_name",
+    columns: ["lastName","firstName"],
 })
 export class User {
 
@@ -21,7 +22,7 @@ export class User {
     id!: string;
 
     @Column("varchar", {
-        length: 100,
+        length: 200,
     })
     firstName!: string;
 
