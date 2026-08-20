@@ -32,6 +32,24 @@ export {
     } from "./diff/diff.js";
 
 export type {
+    MigrationOperation,
+    CreateTableOperation,
+    DropTableOperation,
+    AddColumnOperation,
+    DropColumnOperation,
+    AlterColumnOperation,
+    CreateIndexOperation,
+    DropIndexOperation,
+    RenameTableOperation,
+    RenameColumnOperation,
+} from "./migration/operations.js";
+
+
+export { changesToOperations } from "./migration/from-diff.js";
+
+
+
+export type {
     Schema,
     TableSchema,
     ColumnSchema,
@@ -39,3 +57,11 @@ export type {
     IndexSchema,
     PrimaryKeySchema,
 } from "./schema/types.js";
+
+export {
+    generateMigrationFile,
+} from "./migration/generator.js";
+
+export {
+    createMigrationName,
+} from "./migration/naming.js";

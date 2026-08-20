@@ -3,13 +3,20 @@ import {
     loadSchemaSnapshot,
     diffSchemas,
     saveSchemaSnapshot,
+    changesToOperations
 } from "../src/index.js";
+
 
 import {
     resolve,
 } from "node:path";
 
 import "./user.js";
+
+import {
+    generateMigrationFile,
+} from "../src/index.js";
+
 
 const snapshotPath = resolve(
     ".altrix/schema.json",
@@ -42,8 +49,36 @@ const changes =
         currentSchema,
     );
 
+const operations =
+    changesToOperations(
+        changes,
+    );
+
+    if (operations.length > 0) {
+    const filePath =
+        await generateMigrationFile(
+            "schema_changes",
+            operations,
+        );
+
+    console.log(
+        `Migration created: ${filePath}`,
+    );
+}
+
+console.log("Changes:");
+
 console.dir(
     changes,
+    {
+        depth: null,
+    },
+);
+
+console.log("Operations:");
+
+console.dir(
+    operations,
     {
         depth: null,
     },
