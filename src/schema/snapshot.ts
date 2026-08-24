@@ -23,15 +23,13 @@ export async function saveSchemaSnapshot(
         },
     );
 
-    const contents = JSON.stringify(
-        schema,
-        null,
-        2,
-    );
-
     await writeFile(
         filePath,
-        contents,
+        JSON.stringify(
+            schema,
+            null,
+            2,
+        ),
         "utf8",
     );
 }
@@ -40,16 +38,24 @@ export async function loadSchemaSnapshot(
     filePath: string,
 ): Promise<Schema | null> {
     try {
-        const contents = await readFile(
-            filePath,
-            "utf8",
-        );
+        const content =
+            await readFile(
+                filePath,
+                "utf8",
+            );
 
         return JSON.parse(
-            contents,
+            content,
         ) as Schema;
-    } catch (error: any) {
-        if (error.code === "ENOENT") {
+    } catch (error: unknown) {
+        const code =
+            (
+                error as {
+                    code?: string;
+                }
+            ).code;
+
+        if (code === "ENOENT") {
             return null;
         }
 

@@ -4,7 +4,7 @@
   "description": "TypeScript-first database migration engine",
   "type": "module",
   "bin": {
-    "altrix": "./dist/cli.js"
+    "altrix": "./dist/src/cli/index.js"
   },
   "scripts": {
     "build": "tsc",

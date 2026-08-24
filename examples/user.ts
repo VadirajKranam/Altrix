@@ -38,6 +38,9 @@ export class User {
 
     @Column("datetime")
     createdAt!: Date;
+
+    @Column("integer")
+    age!: number;
 }
 
 console.dir(

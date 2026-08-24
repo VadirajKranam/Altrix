@@ -17,6 +17,10 @@ import {
     generateMigrationFile,
 } from "../src/index.js";
 
+import {
+    generateUpSql,
+    generateDownSql,
+} from "../src/sql/mysql/generator.js";
 
 const snapshotPath = resolve(
     ".altrix/schema.json",
@@ -83,3 +87,21 @@ console.dir(
         depth: null,
     },
 );
+
+const upSql =
+    generateUpSql(
+        operations,
+    );
+
+const downSql =
+    generateDownSql(
+        operations,
+    );
+
+console.log("UP:");
+
+console.dir(upSql);
+
+console.log("DOWN:");
+
+console.dir(downSql);

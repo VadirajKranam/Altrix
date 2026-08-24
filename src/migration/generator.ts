@@ -15,6 +15,13 @@ import {
     createMigrationName,
 } from "./naming.js";
 
+import type { Database } from "../database/types.js";
+
+import {
+    generateUpSql,
+    generateDownSql,
+} from "../sql/mysql/generator.js";
+
 export async function generateMigrationFile(
     name: string,
     operations: MigrationOperation[],
@@ -57,7 +64,15 @@ function generateMigrationSource(
     migrationName: string,
     operations: MigrationOperation[],
 ): string {
-    return `import type { Database } from "../src/database.js";
+const upSql = generateUpSql(operations);
+    const downSql = generateDownSql(operations);
+
+    const upStatements = generateStatements(upSql);
+    const downStatements = generateStatements(downSql);
+
+    return `import type {
+    Database,
+} from "../src/database/types.js";
 
 export const name = ${JSON.stringify(
         migrationName,
@@ -66,13 +81,25 @@ export const name = ${JSON.stringify(
 export async function up(
     db: Database,
 ): Promise<void> {
-    // TODO: generate SQL
+${upStatements}
 }
 
 export async function down(
     db: Database,
 ): Promise<void> {
-    // TODO: generate rollback SQL
+${downStatements}
 }
 `;
+}
+
+function generateStatements(
+    statements: string[],
+): string {
+    return statements
+        .map(
+            sql => `    await db.execute(\`
+        ${sql.replace(/\n/g, "\n        ")}
+    \`);`,
+        )
+        .join("\n\n");
 }

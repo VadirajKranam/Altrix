@@ -65,3 +65,7 @@ export {
 export {
     createMigrationName,
 } from "./migration/naming.js";
+
+export type {
+    Database,
+} from "./database/types.js";
