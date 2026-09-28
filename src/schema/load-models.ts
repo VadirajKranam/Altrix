@@ -1,5 +1,6 @@
 import {
     readdir,
+    readFile,
 } from "node:fs/promises";
 
 import {
@@ -44,6 +45,16 @@ export async function loadModels(
                 file.name,
             );
 
+        const sourceContent =
+            await readFile(
+                sourcePath,
+                "utf8",
+            );
+
+        if (!isModelFile(sourceContent)) {
+            continue;
+        }
+
         const relativePath =
             relative(
                 process.cwd(),
@@ -64,4 +75,10 @@ export async function loadModels(
             compiledPath
         );
     }
+}
+
+function isModelFile(
+    sourceContent: string,
+): boolean {
+    return sourceContent.includes("@Table(");
 }

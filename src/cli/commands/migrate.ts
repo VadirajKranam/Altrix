@@ -1,18 +1,11 @@
 import {
-    readFile,
-} from "node:fs/promises";
-
-import {
-    resolve,
-} from "node:path";
-
-import {
     diffSchemas,
 } from "../../diff/diff.js";
 
 import {
     saveSchemaSnapshot,
-} from "../../index.js";
+    loadSchemaSnapshot,
+} from "../../schema/snapshot.js";
 
 import {
     changesToOperations,
@@ -37,30 +30,18 @@ import {
 export async function createMigration(
     name: string,
 ): Promise<void> {
-  
-
     await loadModels();
 
     const currentSchema =
-        await buildSchema();
-
+        buildSchema();
 
     const snapshotPath = ".altrix/schema.json";
-    await saveSchemaSnapshot(
-        snapshotPath,
-        currentSchema,
-    );
-
-    const snapshotContent =
-        await readFile(
-            snapshotPath,
-            "utf8",
-        );
-
     const previousSchema =
-        JSON.parse(
-            snapshotContent,
-        ) as Schema;
+        await loadSchemaSnapshot(
+            snapshotPath,
+        ) ?? {
+            tables: [],
+        } as Schema;
 
     const changes =
         diffSchemas(
@@ -81,13 +62,13 @@ export async function createMigration(
             changes,
         );
 
-        if (operations.length === 0) {
-    console.log(
-        "No migration operations generated.",
-    );
+    if (operations.length === 0) {
+        console.log(
+            "No migration operations generated.",
+        );
 
-    return;
-}
+        return;
+    }
 
     const filePath =
         await generateMigrationFile(
@@ -95,11 +76,12 @@ export async function createMigration(
             operations,
         );
 
-        await saveSchemaSnapshot(
-            snapshotPath,
-            currentSchema,
-        );
-        console.log(
+    await saveSchemaSnapshot(
+        snapshotPath,
+        currentSchema,
+    );
+
+    console.log(
         `Migration created: ${filePath}`,
     );
 }

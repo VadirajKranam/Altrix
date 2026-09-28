@@ -3,7 +3,6 @@ import {
     Column,
     PrimaryKey,
     Index,
-    registry,
 } from "../src/index.js";
 
 @Table("users")
@@ -42,10 +41,3 @@ export class User {
     @Column("integer")
     age!: number;
 }
-
-console.dir(
-    registry.getSchema(),
-    {
-        depth: null,
-    },
-);

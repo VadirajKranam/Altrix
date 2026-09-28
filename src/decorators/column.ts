@@ -30,13 +30,22 @@ export function Column(
                 String(context.name),
             );
 
+        const existingColumn =
+            metadata.columns.get(columnName);
+
         metadata.columns.set(
             columnName,
             {
+                ...(existingColumn ?? {
+                    name: columnName,
+                    type,
+                    nullable:
+                        options.nullable ?? false,
+                }),
                 name: columnName,
                 type,
                 nullable:
-                    options.nullable ?? false,
+                    options.nullable ?? existingColumn?.nullable ?? false,
                 ...(options.length !== undefined
                     ? {
                         length: options.length,
@@ -45,6 +54,12 @@ export function Column(
                 ...(options.default !== undefined
                     ? {
                         default: options.default,
+                    }
+                    : {}),
+                ...(existingColumn?.foreignKey !== undefined
+                    ? {
+                        foreignKey:
+                            existingColumn.foreignKey,
                     }
                     : {}),
             },
