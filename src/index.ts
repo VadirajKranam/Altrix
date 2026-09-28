@@ -7,6 +7,9 @@ export {
 export {
     Index,
 } from "./decorators/index.js";
+export {
+    ForeignKey,
+} from "./decorators/foreign-key.js";
 
 export { registry } from "./metadata/registry.js";
 
@@ -69,3 +72,8 @@ export {
 export type {
     Database,
 } from "./database/types.js";
+
+export type {
+    ForeignKeyAction,
+    ForeignKeyOptions,
+} from "./decorators/foreign-key.js";

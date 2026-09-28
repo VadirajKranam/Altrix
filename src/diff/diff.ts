@@ -346,7 +346,27 @@ function columnsEqual(
         a.type === b.type &&
         a.nullable === b.nullable &&
         a.length === b.length &&
-        a.default === b.default
+        a.default === b.default &&
+        foreignKeyEqual(
+            a.foreignKey,
+            b.foreignKey,
+        )
+    );
+}
+
+function foreignKeyEqual(
+    a?: { table: string; column: string; onDelete?: string; onUpdate?: string },
+    b?: { table: string; column: string; onDelete?: string; onUpdate?: string },
+): boolean {
+    if (a === undefined || b === undefined) {
+        return a === b;
+    }
+
+    return (
+        a.table === b.table &&
+        a.column === b.column &&
+        a.onDelete === b.onDelete &&
+        a.onUpdate === b.onUpdate
     );
 }
 

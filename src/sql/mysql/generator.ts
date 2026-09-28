@@ -105,27 +105,31 @@ function generateSql(
     }
 }
 
-
 function createTableSql(
     operation: {
         table: TableSchema;
     },
 ): string {
-    const table =
-        operation.table;
+    const table = operation.table;
 
-    const columns =
-        table.columns
-            .map(columnSql)
-            .join(",\n    ");
+    const columns = table.columns
+        .map(columnSql)
+        .join(",\n    ");
 
-    const primaryKey =
-        table.primaryKey
-            ? `,\n    PRIMARY KEY (${table.primaryKey.columns.join(", ")})`
-            : "";
+    const primaryKey = table.primaryKey
+        ? `,\n    PRIMARY KEY (${table.primaryKey.columns.join(", ")})`
+        : "";
+
+    const foreignKeys = table.columns
+        .filter(column => column.foreignKey)
+        .map(column => {
+            const foreignKey = column.foreignKey!;
+            return `,\n    CONSTRAINT fk_${table.name}_${column.name}\n    FOREIGN KEY (${column.name}) REFERENCES ${foreignKey.table} (${foreignKey.column})${foreignKeyClause(foreignKey)}`;
+        })
+        .join("");
 
     return `CREATE TABLE ${table.name} (
-    ${columns}${primaryKey}
+    ${columns}${primaryKey}${foreignKeys}
 );`;
 }
 
@@ -143,8 +147,11 @@ function addColumnSql(
         column: ColumnSchema;
     },
 ): string {
-    return `ALTER TABLE ${operation.table}
-ADD COLUMN ${columnSql(operation.column)};`;
+    const foreignKeySql = operation.column.foreignKey
+        ? `,\nADD CONSTRAINT fk_${operation.table}_${operation.column.name}\nFOREIGN KEY (${operation.column.name}) REFERENCES ${operation.column.foreignKey.table} (${operation.column.foreignKey.column})${foreignKeyClause(operation.column.foreignKey)}`
+        : "";
+
+    return `ALTER TABLE ${operation.table}\nADD COLUMN ${columnSql(operation.column)}${foreignKeySql};`;
 }
 
 function dropColumnSql(
@@ -153,16 +160,39 @@ function dropColumnSql(
         column: ColumnSchema;
     },
 ): string {
-    return `ALTER TABLE ${operation.table}
-DROP COLUMN ${operation.column.name};`;
+    return `ALTER TABLE ${operation.table}\nDROP COLUMN ${operation.column.name};`;
 }
 
 function alterColumnSql(
     table: string,
     column: ColumnSchema,
 ): string {
-    return `ALTER TABLE ${table}
-MODIFY COLUMN ${columnSql(column)};`;
+    let sql = `ALTER TABLE ${table}\nMODIFY COLUMN ${columnSql(column)}`;
+
+    if (column.foreignKey) {
+        sql += `,\nADD CONSTRAINT fk_${table}_${column.name}\nFOREIGN KEY (${column.name}) REFERENCES ${column.foreignKey.table} (${column.foreignKey.column})${foreignKeyClause(column.foreignKey)}`;
+    }
+
+    return `${sql};`;
+}
+
+function foreignKeyClause(
+    foreignKey: {
+        onDelete?: string;
+        onUpdate?: string;
+    },
+): string {
+    const clauses: string[] = [];
+
+    if (foreignKey.onDelete) {
+        clauses.push(`ON DELETE ${foreignKey.onDelete}`);
+    }
+
+    if (foreignKey.onUpdate) {
+        clauses.push(`ON UPDATE ${foreignKey.onUpdate}`);
+    }
+
+    return clauses.length > 0 ? ` ${clauses.join(" ")}` : "";
 }
 
 function createIndexSql(
@@ -175,13 +205,9 @@ function createIndexSql(
         };
     },
 ): string {
-    const unique =
-        operation.index.unique
-            ? "UNIQUE "
-            : "";
+    const unique = operation.index.unique ? "UNIQUE " : "";
 
-    return `CREATE ${unique}INDEX ${operation.index.name}
-ON ${operation.table} (${operation.index.columns.join(", ")});`;
+    return `CREATE ${unique}INDEX ${operation.index.name}\nON ${operation.table} (${operation.index.columns.join(", ")});`;
 }
 
 function dropIndexSql(
@@ -192,8 +218,7 @@ function dropIndexSql(
         };
     },
 ): string {
-    return `DROP INDEX ${operation.index.name}
-ON ${operation.table};`;
+    return `DROP INDEX ${operation.index.name}\nON ${operation.table};`;
 }
 
 function renameTableSql(
@@ -208,23 +233,19 @@ function renameColumnSql(
     from: string,
     to: string,
 ): string {
-    return `ALTER TABLE ${table}
-RENAME COLUMN ${from} TO ${to};`;
+    return `ALTER TABLE ${table}\nRENAME COLUMN ${from} TO ${to};`;
 }
 
 function columnSql(
     column: ColumnSchema,
 ): string {
-    let sql =
-        `${column.name} ${columnTypeSql(column)}`;
+    let sql = `${column.name} ${columnTypeSql(column)}`;
 
     if (!column.nullable) {
         sql += " NOT NULL";
     }
 
-    if (
-        column.default !== undefined
-    ) {
+    if (column.default !== undefined) {
         sql += ` DEFAULT ${column.default}`;
     }
 

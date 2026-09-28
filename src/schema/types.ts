@@ -15,6 +15,22 @@ export interface ColumnSchema {
     length?: number;
     nullable: boolean;
     default?: unknown;
+    foreignKey?: ForeignKeySchema;
+}
+
+export type ForeignKeyAction =
+    | "CASCADE"
+    | "SET NULL"
+    | "SET DEFAULT"
+    | "RESTRICT"
+    | "NO ACTION";
+
+export interface ForeignKeySchema {
+    name?: string;
+    table: string;
+    column: string;
+    onDelete?: ForeignKeyAction;
+    onUpdate?: ForeignKeyAction;
 }
 
 export type ColumnType =
