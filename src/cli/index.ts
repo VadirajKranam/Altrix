@@ -67,16 +67,32 @@ if (command === "migrate") {
         await showCurrentRevision(
             adapterPath,
         );
+    } else if (subcommand === "history") {
+        const {
+            showMigrationHistory,
+        } = await import(
+            "./commands/history.js"
+        );
+
+        await showMigrationHistory();
+    } else if (subcommand === "heads") {
+        const {
+            showMigrationHeads,
+        } = await import(
+            "./commands/heads.js"
+        );
+
+        await showMigrationHeads();
     } else {
         console.error(
-            "Usage: altrix migrate create <name> | altrix migrate upgrade [head|revision] [--adapter <path>] | altrix migrate current [--adapter <path>]",
+            "Usage: altrix migrate create <name> | altrix migrate upgrade [head|revision] [--adapter <path>] | altrix migrate current [--adapter <path>] | altrix migrate history | altrix migrate heads",
         );
 
         process.exit(1);
     }
 } else {
     console.error(
-        "Usage: altrix migrate create <name> | altrix migrate upgrade [head|revision] [--adapter <path>] | altrix migrate current [--adapter <path>]",
+        "Usage: altrix migrate create <name> | altrix migrate upgrade [head|revision] [--adapter <path>] | altrix migrate current [--adapter <path>] | altrix migrate history | altrix migrate heads",
     );
 
     process.exit(1);
