@@ -42,6 +42,12 @@ export interface UpgradeResult {
 const STATE_FILE_PATH =
     ".altrix/revisions.json";
 
+const VERSION_TABLE_NAME =
+    "altrix_version";
+
+const VERSION_COLUMN_NAME =
+    "version_num";
+
 export async function upgradeToRevision(
     db: Database,
     target: string,
@@ -60,8 +66,16 @@ export async function upgradeToRevision(
     const state =
         await loadMigrationState();
 
+    await ensureVersionTable(db);
+
+    const currentRevision =
+        await resolveCurrentRevision(
+            db,
+            state.currentRevision,
+        );
+
     const fromRevision =
-        state.currentRevision;
+        currentRevision;
 
     const resolvedTarget =
         target === "head"
@@ -81,19 +95,19 @@ export async function upgradeToRevision(
     }
 
     const currentIndex =
-        state.currentRevision
+        currentRevision
             ? revisions.findIndex(
                 revision =>
-                    revision.revision === state.currentRevision,
+                    revision.revision === currentRevision,
             )
             : -1;
 
     if (
-        state.currentRevision !== null &&
+        currentRevision !== null &&
         currentIndex === -1
     ) {
         throw new Error(
-            `Current revision not found in migrations: ${state.currentRevision}`,
+            `Current revision not found in migrations: ${currentRevision}`,
         );
     }
 
@@ -138,6 +152,11 @@ export async function upgradeToRevision(
         ],
     };
 
+    await persistCurrentRevision(
+        db,
+        resolvedTarget,
+    );
+
     await saveMigrationState(newState);
 
     return {
@@ -145,6 +164,20 @@ export async function upgradeToRevision(
         toRevision: resolvedTarget,
         appliedRevisions,
     };
+}
+
+export async function getCurrentRevision(
+    db: Database,
+): Promise<string | null> {
+    const state =
+        await loadMigrationState();
+
+    await ensureVersionTable(db);
+
+    return resolveCurrentRevision(
+        db,
+        state.currentRevision,
+    );
 }
 
 async function loadCompiledMigration(
@@ -252,4 +285,78 @@ async function saveMigrationState(
         ),
         "utf8",
     );
+}
+
+async function ensureVersionTable(
+    db: Database,
+): Promise<void> {
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS ${VERSION_TABLE_NAME} (
+            ${VERSION_COLUMN_NAME} VARCHAR(255) NOT NULL PRIMARY KEY
+        );
+    `);
+}
+
+async function resolveCurrentRevision(
+    db: Database,
+    fallbackRevision: string | null,
+): Promise<string | null> {
+    if (!db.query) {
+        return fallbackRevision;
+    }
+
+    const rows =
+        await db.query<{
+            version_num?: string | null;
+            VERSION_NUM?: string | null;
+            versionNum?: string | null;
+        }>(`
+        SELECT ${VERSION_COLUMN_NAME}
+        FROM ${VERSION_TABLE_NAME}
+        LIMIT 1;
+    `);
+
+    const firstRow =
+        rows[0];
+
+    const revision =
+        firstRow?.version_num ??
+        firstRow?.VERSION_NUM ??
+        firstRow?.versionNum ??
+        null;
+
+    if (revision) {
+        return revision;
+    }
+
+    if (!fallbackRevision) {
+        return null;
+    }
+
+    await persistCurrentRevision(
+        db,
+        fallbackRevision,
+    );
+
+    return fallbackRevision;
+}
+
+async function persistCurrentRevision(
+    db: Database,
+    revision: string,
+): Promise<void> {
+    await db.execute(`
+        DELETE FROM ${VERSION_TABLE_NAME};
+    `);
+
+    await db.execute(`
+        INSERT INTO ${VERSION_TABLE_NAME} (${VERSION_COLUMN_NAME})
+        VALUES ('${escapeSqlLiteral(revision)}');
+    `);
+}
+
+function escapeSqlLiteral(
+    value: string,
+): string {
+    return value.replace(/'/g, "''");
 }

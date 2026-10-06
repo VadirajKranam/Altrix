@@ -47,16 +47,36 @@ if (command === "migrate") {
             target,
             adapterPath,
         );
+    } else if (subcommand === "current") {
+        const adapterFlagIndex =
+            rest.findIndex(
+                value => value === "--adapter",
+            );
+
+        const adapterPath =
+            adapterFlagIndex >= 0
+                ? rest[adapterFlagIndex + 1]
+                : undefined;
+
+        const {
+            showCurrentRevision,
+        } = await import(
+            "./commands/current.js"
+        );
+
+        await showCurrentRevision(
+            adapterPath,
+        );
     } else {
         console.error(
-            "Usage: altrix migrate create <name> | altrix migrate upgrade [head|revision] [--adapter <path>]",
+            "Usage: altrix migrate create <name> | altrix migrate upgrade [head|revision] [--adapter <path>] | altrix migrate current [--adapter <path>]",
         );
 
         process.exit(1);
     }
 } else {
     console.error(
-        "Usage: altrix migrate create <name> | altrix migrate upgrade [head|revision] [--adapter <path>]",
+        "Usage: altrix migrate create <name> | altrix migrate upgrade [head|revision] [--adapter <path>] | altrix migrate current [--adapter <path>]",
     );
 
     process.exit(1);

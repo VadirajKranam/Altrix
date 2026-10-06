@@ -71,6 +71,7 @@ export {
 } from "./migration/revisions.js";
 
 export {
+    getCurrentRevision,
     upgradeToRevision,
 } from "./migration/runner.js";
 
