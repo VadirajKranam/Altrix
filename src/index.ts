@@ -66,6 +66,15 @@ export {
 } from "./migration/generator.js";
 
 export {
+    findHeadRevision,
+    listSourceRevisions,
+} from "./migration/revisions.js";
+
+export {
+    upgradeToRevision,
+} from "./migration/runner.js";
+
+export {
     createMigrationName,
 } from "./migration/naming.js";
 

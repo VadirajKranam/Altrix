@@ -17,7 +17,8 @@
   },
   "include": [
     "src/**/*.ts",
-    "examples/**/*.ts"
+    "examples/**/*.ts",
+    "migrations/**/*.ts"
   ],
   "exclude": [
     "node_modules",

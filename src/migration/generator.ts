@@ -15,6 +15,10 @@ import {
     createMigrationName,
 } from "./naming.js";
 
+import {
+    findHeadRevision,
+} from "./revisions.js";
+
 import type { Database } from "../database/types.js";
 
 import {
@@ -28,6 +32,9 @@ export async function generateMigrationFile(
 ): Promise<string> {
     const migrationName =
         createMigrationName(name);
+
+    const downRevision =
+        await findHeadRevision();
 
     const migrationsDirectory =
         resolve("migrations");
@@ -48,6 +55,7 @@ export async function generateMigrationFile(
     const contents =
         generateMigrationSource(
             migrationName,
+            downRevision,
             operations,
         );
 
@@ -62,9 +70,10 @@ export async function generateMigrationFile(
 
 function generateMigrationSource(
     migrationName: string,
+    downRevision: string | null,
     operations: MigrationOperation[],
 ): string {
-const upSql = generateUpSql(operations);
+    const upSql = generateUpSql(operations);
     const downSql = generateDownSql(operations);
 
     const upStatements = generateStatements(upSql);
@@ -76,6 +85,14 @@ const upSql = generateUpSql(operations);
 
 export const name = ${JSON.stringify(
         migrationName,
+    )};
+
+export const revision = ${JSON.stringify(
+        migrationName,
+    )};
+
+export const downRevision = ${JSON.stringify(
+        downRevision,
     )};
 
 export async function up(
