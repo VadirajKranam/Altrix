@@ -67,6 +67,8 @@ export {
 
 export {
     findHeadRevision,
+    findHeadRevisions,
+    listRevisionNodes,
     listSourceRevisions,
 } from "./migration/revisions.js";
 
