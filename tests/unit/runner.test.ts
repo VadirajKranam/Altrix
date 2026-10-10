@@ -24,6 +24,7 @@ import type {
 
 import {
     getCurrentRevision,
+    stampRevision,
     upgradeToRevision,
 } from "../../src/migration/runner.js";
 
@@ -121,6 +122,92 @@ describe("migration runner", () => {
             const current = await getCurrentRevision(db);
             expect(current).toBe(
                 "20261001020202_add_posts",
+            );
+        } finally {
+            chdir(previousCwd);
+            await workspace.cleanup();
+        }
+    });
+
+    it("stamps head and base without executing migrations", async () => {
+        previousCwd = cwd();
+        const workspace = await createTestWorkspace();
+
+        try {
+            await writeMigrationPair(
+                workspace.root,
+                "20261001010101_create_users",
+                null,
+                "CREATE TABLE users (id INT);",
+            );
+
+            await writeMigrationPair(
+                workspace.root,
+                "20261001020202_add_posts",
+                "20261001010101_create_users",
+                "CREATE TABLE posts (id INT);",
+            );
+
+            chdir(workspace.root);
+
+            const db = new InMemoryDatabase();
+
+            const toHead = await stampRevision(
+                db,
+                "head",
+            );
+
+            expect(toHead.toRevision).toBe(
+                "20261001020202_add_posts",
+            );
+
+            expect(
+                db.executed.some(sql => sql.includes("CREATE TABLE users")),
+            ).toBe(false);
+
+            const currentAfterHead = await getCurrentRevision(db);
+            expect(currentAfterHead).toBe(
+                "20261001020202_add_posts",
+            );
+
+            const toBase = await stampRevision(
+                db,
+                "base",
+            );
+
+            expect(toBase.toRevision).toBeNull();
+
+            const currentAfterBase = await getCurrentRevision(db);
+            expect(currentAfterBase).toBeNull();
+        } finally {
+            chdir(previousCwd);
+            await workspace.cleanup();
+        }
+    });
+
+    it("rejects stamping unknown revisions", async () => {
+        previousCwd = cwd();
+        const workspace = await createTestWorkspace();
+
+        try {
+            await writeMigrationPair(
+                workspace.root,
+                "20261001010101_create_users",
+                null,
+                "CREATE TABLE users (id INT);",
+            );
+
+            chdir(workspace.root);
+
+            const db = new InMemoryDatabase();
+
+            await expect(
+                stampRevision(
+                    db,
+                    "20990101010101_missing",
+                ),
+            ).rejects.toThrow(
+                "Target revision not found",
             );
         } finally {
             chdir(previousCwd);

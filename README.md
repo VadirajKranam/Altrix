@@ -47,6 +47,13 @@ Show current revision:
 node ./dist/src/cli/index.js migrate current --adapter ./dist/examples/postgres-db-adapter.js
 ```
 
+Stamp revision state without running SQL:
+
+```bash
+node ./dist/src/cli/index.js migrate stamp head --adapter ./dist/examples/postgres-db-adapter.js
+node ./dist/src/cli/index.js migrate stamp base --adapter ./dist/examples/postgres-db-adapter.js
+```
+
 Inspect revision graph:
 
 ```bash

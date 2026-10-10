@@ -67,6 +67,30 @@ if (command === "migrate") {
         await showCurrentRevision(
             adapterPath,
         );
+        } else if (subcommand === "stamp") {
+            const target =
+                rest[0] ?? "head";
+
+            const adapterFlagIndex =
+                rest.findIndex(
+                    value => value === "--adapter",
+                );
+
+            const adapterPath =
+                adapterFlagIndex >= 0
+                    ? rest[adapterFlagIndex + 1]
+                    : undefined;
+
+            const {
+                stampMigrations,
+            } = await import(
+                "./commands/stamp.js"
+            );
+
+            await stampMigrations(
+                target,
+                adapterPath,
+            );
     } else if (subcommand === "history") {
         const {
             showMigrationHistory,
@@ -85,14 +109,14 @@ if (command === "migrate") {
         await showMigrationHeads();
     } else {
         console.error(
-            "Usage: altrix migrate create <name> | altrix migrate upgrade [head|revision] [--adapter <path>] | altrix migrate current [--adapter <path>] | altrix migrate history | altrix migrate heads",
+                "Usage: altrix migrate create <name> | altrix migrate upgrade [head|revision] [--adapter <path>] | altrix migrate current [--adapter <path>] | altrix migrate history | altrix migrate heads | altrix migrate stamp [head|base|revision] [--adapter <path>]",
         );
 
         process.exit(1);
     }
 } else {
     console.error(
-        "Usage: altrix migrate create <name> | altrix migrate upgrade [head|revision] [--adapter <path>] | altrix migrate current [--adapter <path>] | altrix migrate history | altrix migrate heads",
+        "Usage: altrix migrate create <name> | altrix migrate upgrade [head|revision] [--adapter <path>] | altrix migrate current [--adapter <path>] | altrix migrate history | altrix migrate heads | altrix migrate stamp [head|base|revision] [--adapter <path>]",
     );
 
     process.exit(1);
