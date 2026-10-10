@@ -39,6 +39,12 @@ export interface UpgradeResult {
     appliedRevisions: string[];
 }
 
+export interface DowngradeResult {
+    fromRevision: string | null;
+    toRevision: string | null;
+    revertedRevisions: string[];
+}
+
 export interface StampResult {
     fromRevision: string | null;
     toRevision: string | null;
@@ -183,6 +189,131 @@ export async function getCurrentRevision(
         db,
         state.currentRevision,
     );
+}
+
+export async function downgradeToRevision(
+    db: Database,
+    target: string,
+): Promise<DowngradeResult> {
+    const revisions =
+        await listSourceRevisions();
+
+    const state =
+        await loadMigrationState();
+
+    await ensureVersionTable(db);
+
+    const currentRevision =
+        await resolveCurrentRevision(
+            db,
+            state.currentRevision,
+        );
+
+    const fromRevision =
+        currentRevision;
+
+    if (currentRevision === null) {
+        const resolvedTarget =
+            target === "base"
+                ? null
+                : await resolveDowngradeTarget(
+                    target,
+                    revisions,
+                );
+
+        return {
+            fromRevision,
+            toRevision: resolvedTarget,
+            revertedRevisions: [],
+        };
+    }
+
+    const currentIndex =
+        revisions.findIndex(
+            revision =>
+                revision.revision === currentRevision,
+        );
+
+    if (currentIndex === -1) {
+        throw new Error(
+            `Current revision not found in migrations: ${currentRevision}`,
+        );
+    }
+
+    const targetIndex =
+        await resolveDowngradeTargetIndex(
+            target,
+            revisions,
+        );
+
+    if (targetIndex >= currentIndex) {
+        return {
+            fromRevision,
+            toRevision:
+                targetIndex === -1
+                    ? null
+                    : revisions[targetIndex]!.revision,
+            revertedRevisions: [],
+        };
+    }
+
+    const toRevert = revisions.slice(
+        targetIndex + 1,
+        currentIndex + 1,
+    );
+
+    const revertedRevisions: string[] = [];
+
+    for (let i = toRevert.length - 1; i >= 0; i -= 1) {
+        const revision = toRevert[i]!;
+        const migration =
+            await loadCompiledMigration(
+                revision.fileName,
+            );
+
+        if (migration.revision !== revision.revision) {
+            throw new Error(
+                `Revision mismatch in ${revision.fileName}: expected ${revision.revision}, got ${migration.revision}`,
+            );
+        }
+
+        await migration.down(db);
+        revertedRevisions.push(
+            migration.revision,
+        );
+    }
+
+    const newCurrentRevision =
+        targetIndex === -1
+            ? null
+            : revisions[targetIndex]!.revision;
+
+    if (newCurrentRevision === null) {
+        await clearCurrentRevision(db);
+    } else {
+        await persistCurrentRevision(
+            db,
+            newCurrentRevision,
+        );
+    }
+
+    const truncatedApplied =
+        newCurrentRevision === null
+            ? []
+            : revisions
+                .slice(0, targetIndex + 1)
+                .map(revision => revision.revision);
+
+    await saveMigrationState({
+        currentRevision: newCurrentRevision,
+        applied: truncatedApplied,
+    });
+
+    return {
+        fromRevision,
+        toRevision: newCurrentRevision,
+        revertedRevisions,
+    };
 }
 
 export async function stampRevision(
@@ -453,6 +584,58 @@ async function resolveStampTarget(
     }
 
     return target;
+}
+
+async function resolveDowngradeTarget(
+    target: string,
+    revisions: {
+        revision: string;
+    }[],
+): Promise<string | null> {
+    const index =
+        await resolveDowngradeTargetIndex(
+            target,
+            revisions,
+        );
+
+    if (index === -1) {
+        return null;
+    }
+
+    return revisions[index]!.revision;
+}
+
+async function resolveDowngradeTargetIndex(
+    target: string,
+    revisions: {
+        revision: string;
+    }[],
+): Promise<number> {
+    if (target === "base") {
+        return -1;
+    }
+
+    if (target === "head") {
+        if (revisions.length === 0) {
+            return -1;
+        }
+
+        return revisions.length - 1;
+    }
+
+    const index =
+        revisions.findIndex(
+            revision =>
+                revision.revision === target,
+        );
+
+    if (index === -1) {
+        throw new Error(
+            `Target revision not found: ${target}`,
+        );
+    }
+
+    return index;
 }
 
 function escapeSqlLiteral(

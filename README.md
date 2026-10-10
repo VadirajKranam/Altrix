@@ -41,6 +41,13 @@ Apply migrations to head (adapter required):
 node ./dist/src/cli/index.js migrate upgrade head --adapter ./dist/examples/postgres-db-adapter.js
 ```
 
+Downgrade migrations to base or a target revision:
+
+```bash
+node ./dist/src/cli/index.js migrate downgrade base --adapter ./dist/examples/postgres-db-adapter.js
+node ./dist/src/cli/index.js migrate downgrade 20261001010101_create_users --adapter ./dist/examples/postgres-db-adapter.js
+```
+
 Show current revision:
 
 ```bash

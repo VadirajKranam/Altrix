@@ -23,6 +23,7 @@ import type {
 } from "../../src/database/types.js";
 
 import {
+    downgradeToRevision,
     getCurrentRevision,
     stampRevision,
     upgradeToRevision,
@@ -203,6 +204,84 @@ describe("migration runner", () => {
 
             await expect(
                 stampRevision(
+                    db,
+                    "20990101010101_missing",
+                ),
+            ).rejects.toThrow(
+                "Target revision not found",
+            );
+        } finally {
+            chdir(previousCwd);
+            await workspace.cleanup();
+        }
+    });
+
+    it("downgrades to base by executing down in reverse order", async () => {
+        previousCwd = cwd();
+        const workspace = await createTestWorkspace();
+
+        try {
+            await writeMigrationPair(
+                workspace.root,
+                "20261001010101_create_users",
+                null,
+                "CREATE TABLE users (id INT);",
+            );
+
+            await writeMigrationPair(
+                workspace.root,
+                "20261001020202_add_posts",
+                "20261001010101_create_users",
+                "CREATE TABLE posts (id INT);",
+            );
+
+            chdir(workspace.root);
+
+            const db = new InMemoryDatabase();
+
+            await upgradeToRevision(
+                db,
+                "head",
+            );
+
+            const result = await downgradeToRevision(
+                db,
+                "base",
+            );
+
+            expect(result.revertedRevisions).toEqual([
+                "20261001020202_add_posts",
+                "20261001010101_create_users",
+            ]);
+
+            expect(result.toRevision).toBeNull();
+
+            const current = await getCurrentRevision(db);
+            expect(current).toBeNull();
+        } finally {
+            chdir(previousCwd);
+            await workspace.cleanup();
+        }
+    });
+
+    it("rejects downgrading to unknown revisions", async () => {
+        previousCwd = cwd();
+        const workspace = await createTestWorkspace();
+
+        try {
+            await writeMigrationPair(
+                workspace.root,
+                "20261001010101_create_users",
+                null,
+                "CREATE TABLE users (id INT);",
+            );
+
+            chdir(workspace.root);
+
+            const db = new InMemoryDatabase();
+
+            await expect(
+                downgradeToRevision(
                     db,
                     "20990101010101_missing",
                 ),

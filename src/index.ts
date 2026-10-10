@@ -73,6 +73,7 @@ export {
 } from "./migration/revisions.js";
 
 export {
+    downgradeToRevision,
     getCurrentRevision,
     stampRevision,
     upgradeToRevision,
