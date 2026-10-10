@@ -85,6 +85,15 @@ export type {
     Database,
 } from "./database/types.js";
 
+export {
+    createPostgresDatabase,
+} from "./database/postgres.js";
+
+export type {
+    PostgresDatabase,
+    PostgresDatabaseOptions,
+} from "./database/postgres.js";
+
 export type {
     ForeignKeyAction,
     ForeignKeyOptions,
