@@ -47,6 +47,30 @@ if (command === "migrate") {
             target,
             adapterPath,
         );
+    } else if (subcommand === "downgrade") {
+        const target =
+            rest[0] ?? "base";
+
+        const adapterFlagIndex =
+            rest.findIndex(
+                value => value === "--adapter",
+            );
+
+        const adapterPath =
+            adapterFlagIndex >= 0
+                ? rest[adapterFlagIndex + 1]
+                : undefined;
+
+        const {
+            downgradeMigrations,
+        } = await import(
+            "./commands/downgrade.js"
+        );
+
+        await downgradeMigrations(
+            target,
+            adapterPath,
+        );
     } else if (subcommand === "current") {
         const adapterFlagIndex =
             rest.findIndex(
@@ -109,14 +133,14 @@ if (command === "migrate") {
         await showMigrationHeads();
     } else {
         console.error(
-                "Usage: altrix migrate create <name> | altrix migrate upgrade [head|revision] [--adapter <path>] | altrix migrate current [--adapter <path>] | altrix migrate history | altrix migrate heads | altrix migrate stamp [head|base|revision] [--adapter <path>]",
+            "Usage: altrix migrate create <name> | altrix migrate upgrade [head|revision] [--adapter <path>] | altrix migrate downgrade [base|revision] [--adapter <path>] | altrix migrate current [--adapter <path>] | altrix migrate history | altrix migrate heads | altrix migrate stamp [head|base|revision] [--adapter <path>]",
         );
 
         process.exit(1);
     }
 } else {
     console.error(
-        "Usage: altrix migrate create <name> | altrix migrate upgrade [head|revision] [--adapter <path>] | altrix migrate current [--adapter <path>] | altrix migrate history | altrix migrate heads | altrix migrate stamp [head|base|revision] [--adapter <path>]",
+        "Usage: altrix migrate create <name> | altrix migrate upgrade [head|revision] [--adapter <path>] | altrix migrate downgrade [base|revision] [--adapter <path>] | altrix migrate current [--adapter <path>] | altrix migrate history | altrix migrate heads | altrix migrate stamp [head|base|revision] [--adapter <path>]",
     );
 
     process.exit(1);
