@@ -74,6 +74,7 @@ export {
 
 export {
     getCurrentRevision,
+    stampRevision,
     upgradeToRevision,
 } from "./migration/runner.js";
 

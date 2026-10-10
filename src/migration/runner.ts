@@ -39,6 +39,11 @@ export interface UpgradeResult {
     appliedRevisions: string[];
 }
 
+export interface StampResult {
+    fromRevision: string | null;
+    toRevision: string | null;
+}
+
 const STATE_FILE_PATH =
     ".altrix/revisions.json";
 
@@ -178,6 +183,54 @@ export async function getCurrentRevision(
         db,
         state.currentRevision,
     );
+}
+
+export async function stampRevision(
+    db: Database,
+    target: string,
+): Promise<StampResult> {
+    const revisions =
+        await listSourceRevisions();
+
+    const state =
+        await loadMigrationState();
+
+    await ensureVersionTable(db);
+
+    const currentRevision =
+        await resolveCurrentRevision(
+            db,
+            state.currentRevision,
+        );
+
+    const resolvedTarget =
+        await resolveStampTarget(
+            target,
+            revisions,
+        );
+
+    if (resolvedTarget === null) {
+        await clearCurrentRevision(db);
+    } else {
+        await persistCurrentRevision(
+            db,
+            resolvedTarget,
+        );
+    }
+
+    const newApplied = resolvedTarget
+        ? [resolvedTarget]
+        : [];
+
+    await saveMigrationState({
+        currentRevision: resolvedTarget,
+        applied: newApplied,
+    });
+
+    return {
+        fromRevision: currentRevision,
+        toRevision: resolvedTarget,
+    };
 }
 
 async function loadCompiledMigration(
@@ -345,14 +398,61 @@ async function persistCurrentRevision(
     db: Database,
     revision: string,
 ): Promise<void> {
-    await db.execute(`
-        DELETE FROM ${VERSION_TABLE_NAME};
-    `);
+    await clearCurrentRevision(db);
 
     await db.execute(`
         INSERT INTO ${VERSION_TABLE_NAME} (${VERSION_COLUMN_NAME})
         VALUES ('${escapeSqlLiteral(revision)}');
     `);
+}
+
+async function clearCurrentRevision(
+    db: Database,
+): Promise<void> {
+    await db.execute(`
+        DELETE FROM ${VERSION_TABLE_NAME};
+    `);
+}
+
+async function resolveStampTarget(
+    target: string,
+    revisions: {
+        revision: string;
+    }[],
+): Promise<string | null> {
+    if (target === "base") {
+        return null;
+    }
+
+    if (target === "head") {
+        if (revisions.length === 0) {
+            return null;
+        }
+
+        return revisions[
+            revisions.length - 1
+        ]!.revision;
+    }
+
+    if (revisions.length === 0) {
+        throw new Error(
+            `Target revision not found: ${target}`,
+        );
+    }
+
+    const exists =
+        revisions.some(
+            revision =>
+                revision.revision === target,
+        );
+
+    if (!exists) {
+        throw new Error(
+            `Target revision not found: ${target}`,
+        );
+    }
+
+    return target;
 }
 
 function escapeSqlLiteral(
